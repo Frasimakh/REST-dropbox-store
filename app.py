@@ -19,7 +19,7 @@ def bad_request(error):
     return make_response(jsonify({'error': 'Bad Request'}), 400)
 
 
-@app.route('/dbx-store/api/v1.0/files/', methods=['GET'])
+@app.route('/dbx-store/api/v1.0/files', methods=['GET'])
 def get_files():
     files = []
     for entry in dbx.files_list_folder('').entries:
@@ -48,10 +48,14 @@ def update_file(name):
     file['name'] = name
     try:
         dbx.files_delete_v2('/' + file['name'])
-    except dropbox.exceptions.ApiError:
+    except dropbox.exceptions.ApiError:  # such file doesn't exist
         pass
-    dbx.files_upload(bytes(file['data'], 'utf-8'),
+
+    try:
+        dbx.files_upload(bytes(file['data'], 'utf-8'),
                      '/' + file['name'])
+    except dropbox.exceptions.ApiError:  # invalid name
+        return jsonify({'error': 'Invalid name'})
 
     return jsonify(file)
 
